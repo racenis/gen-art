@@ -1,58 +1,123 @@
 import 'color.dart';
 import 'vec2.dart';
+import 'package:image/image.dart' as img;
+import 'dart:io';
 
-enum BitmapMode {
-    wrap, clip
-}
+enum BitmapMode { wrap, clip }
 
 class Bitmap {
+  final int _width;
+  final int _height;
+  final BitmapMode _mode;
+  late List<Color> _pixels;
 
-    // TODO: add bitmap mode to constructor
-    Bitmap(int width, int height) : _width = width, _height = height {
-        assert(_width > 0 && _height > 0);
+  Bitmap(int width, int height, {BitmapMode mode = BitmapMode.clip})
+      : _width = width,
+        _height = height,
+        _mode = mode {
+    assert(_width > 0 && _height > 0);
 
-        int pixcount = _width * _height;
+    int pixcount = _width * _height;
 
-        _pixels = [];
-        for (int i = 0; i < pixcount; i++) {
-            _pixels.add(Color(0, 0, 0, 0));
-        }
+    _pixels = [];
+    for (int i = 0; i < pixcount; i++) {
+      _pixels.add(Color(0, 0, 0, 0));
+    }
+  }
+
+  void savePng(String path) {
+    img.Image image = img.Image(width: _width, height: _height);
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        Color c = getColor(Vec2(x, y));
+        image.setPixelRgba(x, y, (c.r * 255).toInt(), (c.g * 255).toInt(),
+            (c.b * 255).toInt(), (c.a * 255).toInt());
+      }
     }
 
-    // TODO: add construcotor/convert to and from img
+    File(path).writeAsBytesSync(img.encodePng(image));
+  }
 
-    Color getColor(Vec2 pos) {
-        assert(pos.x >= 0 && pos.x < _width);
-        assert(pos.y >= 0 && pos.y < _height);
-        // TODO: add wrapping depending on bitmap mode
-        // clip -- select nearest pixel on image
-        // wrap -- use mod to map coords into local coords
+  // TODO: add construcotor/convert to and from img
 
-        return _pixels[_width * pos.y + pos.x];
+  Color getColor(Vec2 pos) {
+    int x = pos.x;
+    int y = pos.y;
+
+    // CLIP MODE
+    if (_mode == BitmapMode.clip) {
+      if (x < 0) {
+        x = 0;
+      } else if (x >= _width) {
+        x = _width - 1;
+      }
+
+      if (y < 0) {
+        y = 0;
+      } else if (y >= _height) {
+        y = _height - 1;
+      }
+    }
+    // WRAP MODE
+    if (_mode == BitmapMode.wrap) {
+      x = ((x % _width) + _width) % _width;
+      y = ((y % _height) + _height) % _height;
     }
 
-    void setColor(Vec2 pos, Color color) {
-        assert(pos.x >= 0 && pos.x < _width);
-        assert(pos.y >= 0 && pos.y < _height);
+    return _pixels[_width * y + x];
+  }
 
-        _pixels[_width * pos.y + pos.x] = color;
+  void setColor(Vec2 pos, Color color) {
+    if (pos.x < 0 || pos.x >= _width || pos.y < 0 || pos.y >= _height) {
+      return;
     }
+    _pixels[_width * pos.y + pos.x] = color;
+  }
 
-    // TODO: add drawLine(from, to, width) and drawPoint(pos, width) methods
+  void drawPoint(Vec2 pos, int width, Color color) {
+    int half = width ~/ 2;
 
-    // TODO: add colorize method to convert to colors? RGB to A or ? other channel
+    for (int y = pos.y - half; y <= pos.y + half; y++) {
+      for (int x = pos.x - half; x <= pos.x + half; x++) {
+        setColor(Vec2(x, y), color);
+      }
+    }
+  }
 
-    // TODO: add clip(mode/abovebelow, value, replacecolor)
+  void drawLine(Vec2 from, Vec2 to, int width, Color color) {
+    for (double t = 0.0; t <= 1.0; t += 0.001) {
+      int x = (from.x + t * (to.x - from.x)).toInt();
+      int y = (from.y + t * (to.y - from.y)).toInt();
+      drawPoint(Vec2(x, y), width, color);
+    }
+  }
 
-    // TODO: add erase (use bitmap to erase ointo this one)
+  // TODO: add colorize method to convert to colors? RGB to A or ? other channel
 
-    // TODO add blit (into this, also rect source and source bitmap)
+  // TODO: add clip(mode/abovebelow, value, replacecolor)
 
-    // TODO: add map() for mapping the image, distortions, etc.
+  void erase(Bitmap mask) {
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        Color currentColor = getColor(Vec2(x, y));
+        Color maskColor = mask.getColor(Vec2(x, y));
 
-    // TODO: add perlin noise generation, etc. functions
+        Color newColor = Color(
+          (currentColor.r - maskColor.r).clamp(0.0, 1.0),
+          (currentColor.g - maskColor.g).clamp(0.0, 1.0),
+          (currentColor.b - maskColor.b).clamp(0.0, 1.0),
+          (currentColor.a - (maskColor.r + maskColor.g + maskColor.b) / 3)
+              .clamp(0.0, 1.0),
+        );
 
-    final int _width;
-    final int _height;
-    late List<Color> _pixels;
+        setColor(Vec2(x, y), newColor);
+      }
+    }
+  }
+
+  // TODO add blit (into this, also rect source and source bitmap)
+
+  // TODO: add map() for mapping the image, distortions, etc.
+
+  // TODO: add perlin noise generation, etc. functions
 }
