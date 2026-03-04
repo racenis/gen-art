@@ -5,6 +5,13 @@ import 'dart:io';
 
 enum BitmapMode { wrap, clip }
 
+enum ClipMode { clipBelow, clipAbove }
+
+const int colorR = 0x1;
+const int colorG = 0x2;
+const int colorB = 0x4;
+const int colorA = 0x8;
+
 class Bitmap {
   final int _width;
   final int _height;
@@ -22,6 +29,30 @@ class Bitmap {
     _pixels = [];
     for (int i = 0; i < pixcount; i++) {
       _pixels.add(Color(0, 0, 0, 0));
+    }
+  }
+
+  Bitmap.fromList1(List<List<Color>> array)
+      : _width = array[0].length,
+        _height = array.length,
+        _mode = BitmapMode.clip {
+    _pixels = [];
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        _pixels.add(array[y][x]);
+      }
+    }
+  }
+
+  Bitmap.fromList2(List<List<double>> array)
+      : _width = array[0].length,
+        _height = array.length,
+        _mode = BitmapMode.clip {
+    _pixels = [];
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        _pixels.add(Color(array[y][x], array[y][x], array[y][x], 1.0));
+      }
     }
   }
 
@@ -94,7 +125,37 @@ class Bitmap {
 
   // TODO: add colorize method to convert to colors? RGB to A or ? other channel
 
-  // TODO: add clip(mode/abovebelow, value, replacecolor)
+  void clip(int channels, ClipMode mode, double value, Color replacement) {
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        Color currentColor = getColor(Vec2(x, y));
+        bool shouldReplace = false;
+
+        if (channels & colorR != 0) {
+          if (mode == ClipMode.clipBelow && currentColor.r < value)
+            shouldReplace = true;
+          if (mode == ClipMode.clipAbove && currentColor.r > value)
+            shouldReplace = true;
+        }
+
+        if (channels & colorG != 0) {
+          if (mode == ClipMode.clipBelow && currentColor.g < value)
+            shouldReplace = true;
+          if (mode == ClipMode.clipAbove && currentColor.g > value)
+            shouldReplace = true;
+        }
+
+        if (channels & colorB != 0) {
+          if (mode == ClipMode.clipBelow && currentColor.b < value)
+            shouldReplace = true;
+          if (mode == ClipMode.clipAbove && currentColor.b > value)
+            shouldReplace = true;
+        }
+
+        if (shouldReplace) setColor(Vec2(x, y), replacement);
+      }
+    }
+  }
 
   void erase(Bitmap mask) {
     for (int y = 0; y < _height; y++) {
