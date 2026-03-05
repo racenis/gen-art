@@ -7,6 +7,8 @@ enum BitmapMode { wrap, clip }
 
 enum ClipMode { clipBelow, clipAbove }
 
+enum MixMode { normal }
+
 const int colorR = 0x1;
 const int colorG = 0x2;
 const int colorB = 0x4;
@@ -57,6 +59,10 @@ class Bitmap {
   }
 
   void savePng(String path) {
+    File(path).writeAsBytesSync(img.encodePng(toImage()));
+  }
+
+  img.Image toImage() {
     img.Image image = img.Image(width: _width, height: _height);
     for (int y = 0; y < _height; y++) {
       for (int x = 0; x < _width; x++) {
@@ -65,8 +71,25 @@ class Bitmap {
             (c.b * 255).toInt(), (c.a * 255).toInt());
       }
     }
+    return image;
+  }
 
-    File(path).writeAsBytesSync(img.encodePng(image));
+  Bitmap.fromImage(img.Image image)
+      : _width = image.width,
+        _height = image.height,
+        _mode = BitmapMode.clip {
+    _pixels = [];
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        final pixel = image.getPixel(x, y);
+        _pixels.add(Color(
+          pixel.r / 255.0,
+          pixel.g / 255.0,
+          pixel.b / 255.0,
+          pixel.a / 255.0,
+        ));
+      }
+    }
   }
 
   // TODO: add construcotor/convert to and from img
@@ -170,6 +193,32 @@ class Bitmap {
           (currentColor.a - (maskColor.r + maskColor.g + maskColor.b) / 3)
               .clamp(0.0, 1.0),
         );
+
+        setColor(Vec2(x, y), newColor);
+      }
+    }
+  }
+
+  void mix(Bitmap other, MixMode mode) {
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        Color currentColor = getColor(Vec2(x, y));
+        Color otherColor = other.getColor(Vec2(x, y));
+
+        Color newColor = currentColor;
+
+        if (mode == MixMode.normal) {
+          newColor = Color(
+            (currentColor.r * (1 - otherColor.a) + otherColor.r * otherColor.a)
+                .clamp(0.0, 1.0),
+            (currentColor.g * (1 - otherColor.a) + otherColor.g * otherColor.a)
+                .clamp(0.0, 1.0),
+            (currentColor.b * (1 - otherColor.a) + otherColor.b * otherColor.a)
+                .clamp(0.0, 1.0),
+            (currentColor.a * (1 - otherColor.a) + otherColor.a)
+                .clamp(0.0, 1.0),
+          );
+        }
 
         setColor(Vec2(x, y), newColor);
       }
