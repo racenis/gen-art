@@ -2,6 +2,7 @@ import 'color.dart';
 import 'vec2.dart';
 import 'package:image/image.dart' as img;
 import 'dart:io';
+import 'mapping.dart';
 
 enum BitmapMode { wrap, clip }
 
@@ -223,6 +224,87 @@ class Bitmap {
         setColor(Vec2(x, y), newColor);
       }
     }
+  }
+
+  void colorTransfer(int source, int destination) {
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        Color c = getColor(Vec2(x, y));
+
+        double value = 0.0;
+        int count = 0;
+        if (source & colorR != 0) {
+          value += c.r;
+          count++;
+        }
+        if (source & colorG != 0) {
+          value += c.g;
+          count++;
+        }
+        if (source & colorB != 0) {
+          value += c.b;
+          count++;
+        }
+        if (source & colorA != 0) {
+          value += c.a;
+          count++;
+        }
+        if (count > 0) value /= count;
+
+        if (destination & colorR != 0) c.r = value;
+        if (destination & colorG != 0) c.g = value;
+        if (destination & colorB != 0) c.b = value;
+        if (destination & colorA != 0) c.a = value;
+
+        setColor(Vec2(x, y), c);
+      }
+    }
+  }
+
+  Bitmap map(Mapping mapping) {
+    Bitmap result = Bitmap(_width, _height);
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        result.setColor(Vec2(x, y), mapping.getValueAt(Vec2(x, y)));
+      }
+    }
+    return result;
+  }
+
+  Bitmap convolve(Bitmap kernel) {
+    Bitmap result = Bitmap(_width, _height);
+
+    int kHalfW = kernel._width ~/ 2;
+    int kHalfH = kernel._height ~/ 2;
+
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        double r = 0, g = 0, b = 0, a = 0;
+
+        for (int ky = 0; ky < kernel._height; ky++) {
+          for (int kx = 0; kx < kernel._width; kx++) {
+            Color pixel = getColor(Vec2(x + kx - kHalfW, y + ky - kHalfH));
+            Color weight = kernel.getColor(Vec2(kx, ky));
+
+            r += pixel.r * weight.r;
+            g += pixel.g * weight.r;
+            b += pixel.b * weight.r;
+            a += pixel.a * weight.r;
+          }
+        }
+
+        result.setColor(
+            Vec2(x, y),
+            Color(
+              r.clamp(0.0, 1.0),
+              g.clamp(0.0, 1.0),
+              b.clamp(0.0, 1.0),
+              a.clamp(0.0, 1.0),
+            ));
+      }
+    }
+
+    return result;
   }
 
   // TODO add blit (into this, also rect source and source bitmap)
