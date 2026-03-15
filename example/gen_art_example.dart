@@ -18,11 +18,17 @@ void main() {
   Bitmap bmp = Bitmap.fromImage(loaded!);
 
   Bitmap kernel = Bitmap.fromList2([
-    [1 / 9, 1 / 9, 1 / 9],
-    [1 / 9, 1 / 9, 1 / 9],
-    [1 / 9, 1 / 9, 1 / 9],
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
   ]);
 
+  kernel.normalize();
+
   Bitmap blurred = bmp.convolve(kernel);
-  blurred.savePng('output.png');
+  blurred.savePng('output2.png');
+
+  bmp.drawLine(Vec2(0, 0), Vec2(511, 511), 5, Color.fromB(1.0));
+
+  bmp.savePng('output1.png');
 }

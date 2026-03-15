@@ -140,10 +140,27 @@ class Bitmap {
   }
 
   void drawLine(Vec2 from, Vec2 to, int width, Color color) {
-    for (double t = 0.0; t <= 1.0; t += 0.001) {
-      int x = (from.x + t * (to.x - from.x)).toInt();
-      int y = (from.y + t * (to.y - from.y)).toInt();
-      drawPoint(Vec2(x, y), width, color);
+    int x0 = from.x, y0 = from.y;
+    int x1 = to.x, y1 = to.y;
+
+    int dx = (x1 - x0).abs();
+    int dy = -(y1 - y0).abs();
+    int sx = x0 < x1 ? 1 : -1;
+    int sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy;
+
+    while (true) {
+      drawPoint(Vec2(x0, y0), width, color);
+      if (x0 == x1 && y0 == y1) break;
+      int e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x0 += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y0 += sy;
+      }
     }
   }
 
@@ -305,6 +322,25 @@ class Bitmap {
     }
 
     return result;
+  }
+
+  void normalize() {
+    double sum = 0.0;
+
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        sum += getColor(Vec2(x, y)).r;
+      }
+    }
+
+    if (sum == 0) return;
+
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        Color c = getColor(Vec2(x, y));
+        setColor(Vec2(x, y), Color(c.r / sum, c.g / sum, c.b / sum, c.a));
+      }
+    }
   }
 
   // TODO add blit (into this, also rect source and source bitmap)
