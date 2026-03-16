@@ -1,11 +1,6 @@
-class Mapping {
+import 'color.dart';
+import 'vec2.dart';
 
-	/*
-		the mapping takes an rgba value at a xy position in the source image and
-		maps it to an rgba' value into xy' position in the destination image
-
-		alternatively it should accept a gradient as well
-		
-	*/
-
+abstract class Mapping {
+  Color getValueAt(Vec2 pos);
 }
