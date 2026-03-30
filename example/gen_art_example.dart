@@ -1,34 +1,27 @@
 import 'package:gen_art/gen_art.dart';
-import 'package:image/image.dart' as img;
 import 'dart:io';
 
-// class ShiftLeft5 implements Mapping {
-//   final Bitmap _source;
-//   ShiftLeft5(this._source);
-
-//   @override
-//   Color getValueAt(Vec2 pos) {
-//     return _source.getColor(Vec2(pos.x + 5, pos.y));
-//   }
-// }
-
 void main() {
-  img.Image? loaded =
-      img.decodeImage(File('gen-art_Test.png').readAsBytesSync());
-  Bitmap bmp = Bitmap.fromImage(loaded!);
+  Directory('output').createSync(recursive: true);
 
-  Bitmap kernel = Bitmap.fromList2([
-    [1, 1, 1],
-    [1, 1, 1],
-    [1, 1, 1],
-  ]);
+  const double a = 0.2;
+  const double b = 0.3;
+  const double sat = 0.9;
 
-  kernel.normalize();
-
-  Bitmap blurred = bmp.convolve(kernel);
-  blurred.savePng('output2.png');
-
-  bmp.drawLine(Vec2(0, 0), Vec2(511, 511), 5, Color.fromB(1.0));
-
-  bmp.savePng('output1.png');
+  generateCheckerboard([a, b, 0.3, sat], 512, 512)
+      .savePng('output/checker.png');
+  generateGrid([a, b, 0.4, 0.05, sat], 512, 512).savePng('output/grid.png');
+  generateHexagons([a, b, 0.5, 0.1, sat], 512, 512).savePng('output/hex.png');
+  generateBricks([a, b, 0.5, 0.4, 0.3, sat], 512, 512)
+      .savePng('output/brick.png');
+  generateChevron([a, b, 0.4, sat], 512, 512).savePng('output/chevron.png');
+  generateHerringbone([a, b, 0.5, 0.45, sat], 512, 512)
+      .savePng('output/herring.png');
+  generateCrossstitch([a, b, 0.4, 0.15, sat], 512, 512)
+      .savePng('output/cross.png');
+  generateMeander([a, b, 0.6, sat], 512, 512).savePng('output/meander.png');
+  generateConcentricSquares([a, b, 0.5, 0.2, sat], 512, 512)
+      .savePng('output/concentric.png');
+  generateHatching([a, b, 0.3, 0.15, 0.0, sat], 512, 512)
+      .savePng('output/hatch.png');
 }

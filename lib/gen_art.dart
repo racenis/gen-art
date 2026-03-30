@@ -9,5 +9,6 @@ export 'src/color.dart';
 export 'src/gradient.dart';
 export 'src/bitmap.dart';
 export 'src/mapping.dart';
+export 'src/pattern.dart';
 
 // TODO: Export any libraries intended for clients of this package.
